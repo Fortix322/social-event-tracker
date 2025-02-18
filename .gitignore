@@ -1,0 +1,14 @@
+.DS_Store
+.vscode/
+node_modules/
+dist/
+build/
+coverage/
+npm-debug.log
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+docker-compose.*.override.yml
+test/report/
+.git
