@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { ConfigModule } from '@nestjs/config';
-import { AppConfigModule } from './config/app/config.module';
+import { EnvConfigModule } from './config/config.module';
+import { NatsModule } from './modules/nats/nats.module';
 
-import { envSchema } from './config/configuration.scheme';
+import { envSchema } from './config/config.scheme';
 
 @Module({
   imports: [MetricsModule,
@@ -13,7 +14,8 @@ import { envSchema } from './config/configuration.scheme';
       isGlobal: true,
       validate: (env) => envSchema.parse(env)
     }),
-    AppConfigModule
+    EnvConfigModule,
+    NatsModule
   ],
   controllers: [AppController],
   providers: [AppService],
