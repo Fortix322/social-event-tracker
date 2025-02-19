@@ -15,8 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return code 200', () => {
+      expect(appController.postEvent({eventId: "1", timestamp: "1", source: "facebook", funnelStage: "bottom"})).toBe(200);
     });
   });
 });

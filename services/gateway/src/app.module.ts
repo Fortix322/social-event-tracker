@@ -6,7 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { EnvConfigModule } from './config/config.module';
 import { NatsModule } from './modules/nats/nats.module';
 
-import { envSchema } from './config/config.scheme';
+import { envSchema } from './common/schemas/config.schema';
 
 @Module({
   imports: [MetricsModule,

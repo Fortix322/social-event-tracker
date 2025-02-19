@@ -1,13 +1,19 @@
-import { Controller, Get } from '@nestjs/common';
-import { NatsService } from './modules/nats/nats.service';
+import { Controller, Body, Post, HttpCode, HttpStatus, InternalServerErrorException } from '@nestjs/common';
+import { baseEventValidationPipe } from './pipes/baseEventValidation/baseEventValidation.pipe';
+import { BaseEvent } from './common/schemas/baseEvent.schema';
+import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly natsService: NatsService) {}
+  constructor(private readonly appService: AppService) {}
 
-  @Get()
-  async getHello(): Promise<string> {
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async postEvent(@Body('event', baseEventValidationPipe) event: BaseEvent) {
 
-    return "foo";
+    if(!await this.appService.publishEvent(event))
+    {
+      throw new InternalServerErrorException();
+    }
   }
 }
