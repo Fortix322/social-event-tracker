@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { NatsCollectorService } from './modules/nats/natsCollector.service';
 import { EnvConfigService } from './config/config.service';
 import { AckPolicy, JsMsg, RetentionPolicy, StringCodec } from 'nats';
+import { EventService } from './common/db/event.service';
 
 const MAX_MESSAGES = 1;
 
@@ -9,8 +10,7 @@ const MAX_MESSAGES = 1;
 export class AppService {
 
   constructor(private readonly natsService: NatsCollectorService,
-    private readonly configService: EnvConfigService
-  ) {}
+    private readonly configService: EnvConfigService) {}
 
   public async onModuleInit() {
 
@@ -28,7 +28,8 @@ export class AppService {
   private handleEvents(msg: JsMsg) {
 
     const sc = StringCodec();
-    console.log(JSON.parse(sc.decode(msg.data)));
+    const decoded = JSON.parse(sc.decode(msg.data));
+    console.log(decoded);
     msg.ack();
   }
 
