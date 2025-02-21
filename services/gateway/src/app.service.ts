@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { BaseEvent } from './common/schemas/baseEvent.schema';
 import { EnvConfigService } from './config/config.service';
 import { NatsService } from './modules/nats/nats.service';
+import { Event } from 'event-types';
 
 @Injectable()
 export class AppService {
@@ -10,9 +10,10 @@ export class AppService {
     private readonly natsService: NatsService
   ) {}
 
-  public async publishEvent(event: BaseEvent): Promise<boolean>
+  public async publishEvents(events: Event[]): Promise<number>
   {
-    
+    let published = 0;
+
     try {
       const baseSubject = this.configService.get('NATS_SUBJECT_NAME_EVENT');
 
@@ -21,13 +22,16 @@ export class AppService {
         subjects: [baseSubject + '.*']
       })
       
-      await this.natsService.publishMessage(`${baseSubject}.${event.source}`, event);
+      for(const item of events) {
+        await this.natsService.publishMessage(`${baseSubject}.${item.source}`, item);
+        published += 1;
+      }
     }
     catch(error) {
       console.error(error);
-      return false;
+      return published;
     }
 
-    return true;
+    return published;
   }
 }
