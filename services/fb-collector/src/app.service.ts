@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { NatsCollectorService } from './modules/nats/natsCollector.service';
 import { EnvConfigService } from './config/config.service';
 import { AckPolicy, JsMsg, RetentionPolicy, StringCodec } from 'nats';
-import { EventService } from './common/db/event.service';
+import { EventService } from './modules/db/events/event.service';
 
 const MAX_MESSAGES = 1;
 
@@ -10,7 +10,8 @@ const MAX_MESSAGES = 1;
 export class AppService {
 
   constructor(private readonly natsService: NatsCollectorService,
-    private readonly configService: EnvConfigService) {}
+    private readonly configService: EnvConfigService,
+    private readonly eventService: EventService) {}
 
   public async onModuleInit() {
 
@@ -22,15 +23,19 @@ export class AppService {
     await this.natsService.createStreamIfNotExist({name: stream, subjects: [`${subject}.*`], retention: RetentionPolicy.Workqueue});
     await this.natsService.createConsumerIfNotExist(stream, {durable_name: consumer, filter_subject: `${subject}.${source}`, ack_policy: AckPolicy.Explicit});
 
-    await this.natsService.listen(stream, consumer, {max_messages: MAX_MESSAGES, callback: this.handleEvents});
+    await this.natsService.listen(stream, consumer, {max_messages: MAX_MESSAGES, callback: this.handleEvents.bind(this)});
   }
 
   private handleEvents(msg: JsMsg) {
 
     const sc = StringCodec();
     const decoded = JSON.parse(sc.decode(msg.data));
-    console.log(decoded);
-    msg.ack();
+    this.eventService.createEvent(decoded)
+      .then(() => msg.ack())
+      .catch(error => { 
+        msg.term();
+        console.error(error);
+      });
   }
 
 }

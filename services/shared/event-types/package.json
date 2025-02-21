@@ -1,0 +1,21 @@
+{
+  "name": "event-types",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/event.schema.js",
+  "types": "dist/event.schema.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  }
+}

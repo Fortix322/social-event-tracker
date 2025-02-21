@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { EnvConfigModule } from './config/config.module';
 import { NatsCollectorModule } from './modules/nats/natsCollector.module';
+import { EventModule } from './modules/db/events/event.module';
 
 import { envSchema } from './common/schemas/config.schema';
 
@@ -15,8 +16,8 @@ import { envSchema } from './common/schemas/config.schema';
       validate: (env) => envSchema.parse(env)
     }),
     EnvConfigModule,
-    NatsCollectorModule
-  ],
+    NatsCollectorModule,
+    EventModule],
   controllers: [AppController],
   providers: [AppService],
 })
