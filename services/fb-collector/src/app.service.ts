@@ -31,10 +31,11 @@ export class AppService {
     const sc = StringCodec();
     const decoded = JSON.parse(sc.decode(msg.data));
     this.eventService.createEvent(decoded)
-      .then(() => msg.ack())
+      .then(() =>{
+         msg.ack()
+      })
       .catch(error => { 
         msg.term();
-        console.error(error);
       });
   }
 
