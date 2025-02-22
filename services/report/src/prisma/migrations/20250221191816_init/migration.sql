@@ -1,12 +1,9 @@
--- CreateEnum
-CREATE TYPE "FunnelStage" AS ENUM ('top', 'bottom');
+/*
+  Warnings:
 
--- CreateEnum
-CREATE TYPE "FacebookEventType" AS ENUM ('ad_view', 'page_like', 'comment', 'video_view', 'ad_click', 'form_submission', 'checkout_complete');
+  - You are about to drop the column `data` on the `Event` table. All the data in the column will be lost.
 
--- CreateEnum
-CREATE TYPE "TiktokEventType" AS ENUM ('video_view', 'like', 'share', 'comment', 'profile_visit', 'purchase', 'follow');
-
+*/
 -- CreateEnum
 CREATE TYPE "Gender" AS ENUM ('male', 'female', 'non_binary');
 
@@ -25,6 +22,11 @@ CREATE TYPE "Browser" AS ENUM ('Chrome', 'Firefox', 'Safari');
 -- CreateEnum
 CREATE TYPE "TiktokDevice" AS ENUM ('Android', 'iOS', 'Desktop');
 
+-- AlterTable
+ALTER TABLE "Event" DROP COLUMN "data",
+ADD COLUMN     "facebookUserId" TEXT,
+ADD COLUMN     "tiktokUserId" TEXT;
+
 -- CreateTable
 CREATE TABLE "FacebookUser" (
     "userId" TEXT NOT NULL,
@@ -38,11 +40,8 @@ CREATE TABLE "FacebookUser" (
 );
 
 -- CreateTable
-CREATE TABLE "FacebookEvent" (
+CREATE TABLE "FacebookEngagement" (
     "eventId" TEXT NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL,
-    "funnelStage" "FunnelStage" NOT NULL,
-    "eventType" "FacebookEventType" NOT NULL,
     "actionTime" TIMESTAMP(3),
     "referrer" "Referrer",
     "videoId" TEXT,
@@ -51,10 +50,9 @@ CREATE TABLE "FacebookEvent" (
     "clickPosition" "ClickPosition",
     "device" "FacebookDevice",
     "browser" "Browser",
-    "purchaseAmount" TEXT,
-    "userId" TEXT NOT NULL,
+    "purchaseAmount" DECIMAL(65,30),
 
-    CONSTRAINT "FacebookEvent_pkey" PRIMARY KEY ("eventId")
+    CONSTRAINT "FacebookEngagement_pkey" PRIMARY KEY ("eventId")
 );
 
 -- CreateTable
@@ -67,27 +65,29 @@ CREATE TABLE "TiktokUser" (
 );
 
 -- CreateTable
-CREATE TABLE "TiktokEvent" (
+CREATE TABLE "TiktokEngagement" (
     "eventId" TEXT NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL,
-    "funnelStage" "FunnelStage" NOT NULL,
-    "eventType" "TiktokEventType" NOT NULL,
-    "watchTime" DOUBLE PRECISION,
+    "watchTime" INTEGER,
     "percentageWatched" DOUBLE PRECISION,
-    "tiktokDevice" "TiktokDevice",
+    "device" "TiktokDevice",
     "country" TEXT,
     "videoId" TEXT,
     "actionTime" TIMESTAMP(3),
     "profileId" TEXT,
     "purchasedItem" TEXT,
-    "purchaseAmount" TEXT,
-    "userId" TEXT NOT NULL,
+    "purchaseAmount" DECIMAL(65,30),
 
-    CONSTRAINT "TiktokEvent_pkey" PRIMARY KEY ("eventId")
+    CONSTRAINT "TiktokEngagement_pkey" PRIMARY KEY ("eventId")
 );
 
 -- AddForeignKey
-ALTER TABLE "FacebookEvent" ADD CONSTRAINT "FacebookEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "FacebookUser"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Event" ADD CONSTRAINT "Event_facebookUserId_fkey" FOREIGN KEY ("facebookUserId") REFERENCES "FacebookUser"("userId") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TiktokEvent" ADD CONSTRAINT "TiktokEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "TiktokUser"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Event" ADD CONSTRAINT "Event_tiktokUserId_fkey" FOREIGN KEY ("tiktokUserId") REFERENCES "TiktokUser"("userId") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FacebookEngagement" ADD CONSTRAINT "FacebookEngagement_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("eventId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TiktokEngagement" ADD CONSTRAINT "TiktokEngagement_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("eventId") ON DELETE RESTRICT ON UPDATE CASCADE;
