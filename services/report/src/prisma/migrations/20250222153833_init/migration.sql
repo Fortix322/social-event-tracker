@@ -1,11 +1,11 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `data` on the `Event` table. All the data in the column will be lost.
-
-*/
 -- CreateEnum
-CREATE TYPE "Gender" AS ENUM ('male', 'female', 'non_binary');
+CREATE TYPE "Source" AS ENUM ('facebook', 'tiktok');
+
+-- CreateEnum
+CREATE TYPE "FunnelStage" AS ENUM ('top', 'bottom');
+
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('male', 'female', 'non-binary');
 
 -- CreateEnum
 CREATE TYPE "Referrer" AS ENUM ('newsfeed', 'marketplace', 'groups');
@@ -22,10 +22,31 @@ CREATE TYPE "Browser" AS ENUM ('Chrome', 'Firefox', 'Safari');
 -- CreateEnum
 CREATE TYPE "TiktokDevice" AS ENUM ('Android', 'iOS', 'Desktop');
 
--- AlterTable
-ALTER TABLE "Event" DROP COLUMN "data",
-ADD COLUMN     "facebookUserId" TEXT,
-ADD COLUMN     "tiktokUserId" TEXT;
+-- CreateTable
+CREATE TABLE "FacebookEvent" (
+    "eventId" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+    "funnelStage" "FunnelStage" NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" TEXT NOT NULL,
+
+    CONSTRAINT "FacebookEvent_pkey" PRIMARY KEY ("eventId")
+);
+
+-- CreateTable
+CREATE TABLE "TiktokEvent" (
+    "eventId" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+    "funnelStage" "FunnelStage" NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "userId" TEXT NOT NULL,
+
+    CONSTRAINT "TiktokEvent_pkey" PRIMARY KEY ("eventId")
+);
 
 -- CreateTable
 CREATE TABLE "FacebookUser" (
@@ -33,8 +54,7 @@ CREATE TABLE "FacebookUser" (
     "name" TEXT NOT NULL,
     "age" INTEGER NOT NULL,
     "gender" "Gender" NOT NULL,
-    "country" TEXT NOT NULL,
-    "city" TEXT NOT NULL,
+    "location" JSONB NOT NULL,
 
     CONSTRAINT "FacebookUser_pkey" PRIMARY KEY ("userId")
 );
@@ -81,13 +101,13 @@ CREATE TABLE "TiktokEngagement" (
 );
 
 -- AddForeignKey
-ALTER TABLE "Event" ADD CONSTRAINT "Event_facebookUserId_fkey" FOREIGN KEY ("facebookUserId") REFERENCES "FacebookUser"("userId") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "FacebookEvent" ADD CONSTRAINT "FacebookEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "FacebookUser"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Event" ADD CONSTRAINT "Event_tiktokUserId_fkey" FOREIGN KEY ("tiktokUserId") REFERENCES "TiktokUser"("userId") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "FacebookEvent" ADD CONSTRAINT "FacebookEvent_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "FacebookEngagement"("eventId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FacebookEngagement" ADD CONSTRAINT "FacebookEngagement_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("eventId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TiktokEvent" ADD CONSTRAINT "TiktokEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "TiktokUser"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TiktokEngagement" ADD CONSTRAINT "TiktokEngagement_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("eventId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TiktokEvent" ADD CONSTRAINT "TiktokEvent_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "TiktokEngagement"("eventId") ON DELETE RESTRICT ON UPDATE CASCADE;

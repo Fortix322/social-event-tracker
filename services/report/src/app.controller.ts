@@ -1,15 +1,24 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
-import { ReportsService } from './modules/db/reports/reports.service';
+import { Controller, Get, NotImplementedException } from '@nestjs/common';
 
 @Controller("reports")
 export class AppController {
-  constructor(private readonly appService: AppService,
-    private readonly reportsService: ReportsService
-  ) {}
+  constructor() {}
 
   @Get("events")
-  async getHello(): Promise<any> {
-    return await this.reportsService.getEventsReport({from: new Date("2025-02-21"), to: new Date("2025-02-21")});
+  async getEventsReport() {
+
+    throw new NotImplementedException;
+  }
+
+  @Get("revenue")
+  async getRevenueReport() {
+
+    throw new NotImplementedException;
+  }
+
+  @Get("revenue")
+  async  getDemographicsReport() {
+
+    throw new NotImplementedException;
   }
 }
