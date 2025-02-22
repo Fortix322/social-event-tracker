@@ -1,4 +1,4 @@
-import { Controller, Body, Post, HttpCode, HttpStatus, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Body, Post, HttpCode, HttpStatus, InternalServerErrorException, Logger } from '@nestjs/common';
 import { EventValidationPipe } from './pipes/eventValidation/eventValidation.pipe';
 import { AppService } from './app.service';
 import { Event } from 'event-types';
@@ -11,13 +11,15 @@ export class AppController {
   @HttpCode(HttpStatus.OK)
   async postEvent(@Body(EventValidationPipe) events: Event[]) {
 
-    const published = await this.appService.publishEvents(events);
-    if(published === 0) {
-      throw new InternalServerErrorException(`Internal Server Error. Published ${published} events out of ${events.length}...`);
-    }
+    try {
+      const published = await this.appService.publishEvents(events);
 
-    console.log(published);
-    console.log(`Published ${published} events out of ${events.length}`);
-    return `Published ${published} events out of ${events.length}`;
+      Logger.debug(`Published ${published} events`);
+      return `Processed ${published} events out of ${events.length}`;
+    }
+    catch(error) {
+      Logger.error("Failed to publish events", error);
+      throw InternalServerErrorException;
+    }
   }
 }
