@@ -32,9 +32,11 @@ export class AppService {
     const decoded = JSON.parse(sc.decode(msg.data));
     this.eventService.createEvent(decoded)
       .then(() =>{
+        console.log("message uploaded");
          msg.ack()
       })
       .catch(error => { 
+        console.error("message uploading failed");
         msg.term();
       });
   }
