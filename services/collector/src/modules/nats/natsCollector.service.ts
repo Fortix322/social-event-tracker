@@ -1,8 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ApiError, ConnectionOptions, ConsumeOptions, ConsumerConfig, ConsumerMessages, ErrorCode, JetStreamClient, JetStreamManager, NatsConnection, StreamConfig, Subscription, SubscriptionOptions, connect, consumerOpts } from "nats";
 import { EnvConfigService } from "src/config/config.service";
-
-const CONSUMER_ERROR_MSG = "Consumer is not exists.";
 
 @Injectable()
 export class NatsCollectorService {
@@ -17,26 +15,41 @@ export class NatsCollectorService {
     constructor(private readonly configService: EnvConfigService) {
 
         this.connectionOptions = {
-            servers: [this.configService.get('NATS_SERVER')]
+            servers: [this.configService.get('NATS_SERVER')],
+            reconnect: true,
+            maxReconnectAttempts: -1
         };
     }
 
     public async onModuleInit() {
         
-        this.connection = await connect(this.connectionOptions);
-        this.jsm = await this.connection.jetstreamManager();
-        this.jsc = this.connection.jetstream();
+        try {
+            
+            this.connection = await connect(this.connectionOptions);
+            this.jsm = await this.connection.jetstreamManager();
+            this.jsc = this.connection.jetstream();
+        }
+        catch(error) {
+            Logger.error("Failed connection to the NATS server", error)
+        }
     }
 
     public async onModuleDestroy() {
         
-        if(this.msgs) {
-            await this.msgs.close();
-        }
+        try {
 
-        if(this.connection) {
-            await this.connection.flush();
-            await this.connection.close();
+            if(this.msgs) {
+                await this.msgs.close();
+            }
+    
+            if(this.connection) {
+                await this.connection.flush();
+                await this.connection.close();
+            }
+        }
+        catch(error) {
+            Logger.error("Couldn't properly close NATS connection", error);
+            throw error;
         }
     }
 
@@ -53,7 +66,8 @@ export class NatsCollectorService {
             this.msgs = await c.consume(opt);
         } 
         catch(error) {
-            throw new Error(CONSUMER_ERROR_MSG);
+            Logger.error("Couldn't setting up NATS message consuming", error);
+            throw error;
         }
     }
 
@@ -61,14 +75,17 @@ export class NatsCollectorService {
 
         try {
             await this.jsm.streams.info(options.name as string);
+            Logger.debug(`Stream ${options.name} exists`);
         }
         catch(error) {
             const apiError = error as ApiError
 
             if(apiError.code && apiError.code.toString() === ErrorCode.JetStream404NoMessages) {
+                Logger.debug(`Created stream ${options.name}`);
                 return this.jsm.streams.add(options);
             }
 
+            Logger.error("Failed creating NATS stream", error);
             throw error;
         }
     }
@@ -77,14 +94,18 @@ export class NatsCollectorService {
 
         try {
             await this.jsm.consumers.info(stream, options.durable_name as string);
+            Logger.debug(`Consumer ${options.name} exists`);
+
         }
         catch(error) {
             const apiError = error as ApiError
 
             if(apiError.code && apiError.code.toString() === ErrorCode.JetStream404NoMessages) {
+                Logger.debug(`Created consumer ${options.name}`);
                 return this.jsm.consumers.add(stream, options);
             }
 
+            Logger.error("Failed creating NATS consumer", error);
             throw error;
         }
     }
