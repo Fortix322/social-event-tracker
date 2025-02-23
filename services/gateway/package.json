@@ -25,7 +25,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@willsoto/nestjs-prometheus": "^6.0.2",
-    "event-types": "file:../shared/event-types",
+    "event-types": "^1.0.0",
     "nats": "^2.29.2",
     "nest-winston": "^1.10.2",
     "prom-client": "^15.1.3",

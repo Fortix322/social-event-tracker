@@ -4,7 +4,7 @@ import { EnvConfigModule } from "src/config/config.module";
 import { MetricsModule } from "../metrics/metrics.module";
 
 @Module({
-    imports: [EnvConfigModule, MetricsModule],
+    imports: [EnvConfigModule],
     providers: [NatsService],
     exports: [NatsService]
 })

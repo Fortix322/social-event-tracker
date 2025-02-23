@@ -10,6 +10,8 @@ import { format, transports } from 'winston';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableShutdownHooks();
+
   const configService = app.get(EnvConfigService);
   const port = configService.get('PORT');
   const sizeLimit = configService.get('BODY_SIZE_LIMIT');
@@ -24,19 +26,23 @@ async function bootstrap() {
         format: format.combine(
           format.cli(),
           format.splat(),
+          format.errors({ stack: true }),
           format.uncolorize(),
-          
-          format.printf((info) => `[${serviceName}]-${info.level} ${new Date(Date.now()).toUTCString()}: ${info.message}`))
+          format.timestamp({
+            format: 'YYYY-MM-DD hh:mm:ss.SSS A',
+          }),
+          format.printf((info) => `[${serviceName}]-${info.level} ${info.timestamp}}: ${info.message}   ${info.stack ?? ""}`))
         }
       ),
       new transports.Console({
         format: format.combine(
           format.cli(),
           format.splat(),
+          format.errors({ stack: true }),
           format.timestamp({
             format: 'YYYY-MM-DD hh:mm:ss.SSS A',
           }),
-          format.printf((info) => `[${serviceName}]-${info.level} ${new Date(Date.now()).toUTCString()}: ${info.message}`))
+          format.printf((info) => `[${serviceName}]-${info.level} ${info.timestamp}}: ${info.message}  ${info.stack ?? ""}`))
       })
     ]
   }));

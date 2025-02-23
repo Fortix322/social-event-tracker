@@ -6,17 +6,17 @@ import { EnvConfigService } from "src/config/config.service";
 export class MetricsService {
 
     private readonly receivedEvents = new Counter({
-        name: "received_events_count",
+        name: "gateway_received_events_count",
         help: "Total number of successfuly received events"
     });
 
     private readonly processedEvents = new Counter({
-        name: "processed_events_count",
+        name: "gateway_processed_events_count",
         help: "Total number of successfuly processed events"
     });
 
     private readonly failedEvents = new Counter({
-        name: "failed_events_count",
+        name: "gateway_failed_events_count",
         help: "Total number of failed events"
     });
 
@@ -34,18 +34,18 @@ export class MetricsService {
         register.registerMetric(this.failedEvents);
     }
 
-    public incrementReceivedEventsCounter() {
+    public incrementReceivedEventsCounter(count?: number) {
         
-        this.receivedEvents.inc();
+        this.receivedEvents.inc(count);
     }
 
-    public incrementProcessedEventsCounter() {
+    public incrementProcessedEventsCounter(count?: number) {
         
-        this.processedEvents.inc();
+        this.processedEvents.inc(count);
     }
 
-    public incrementFailedEventsCounter() {
+    public incrementFailedEventsCounter(count?: number) {
         
-        this.failedEvents.inc();
+        this.failedEvents.inc(count);
     }
 }

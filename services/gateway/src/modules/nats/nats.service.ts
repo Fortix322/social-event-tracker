@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject } from "@nestjs/common";
 import { ApiError, ConnectionOptions, ErrorCode, JetStreamClient, 
     JetStreamManager, NatsConnection, PubAck, StreamConfig, StringCodec, connect } from "nats";
 import { EnvConfigService } from "src/config/config.service";
@@ -13,9 +13,7 @@ export class NatsService {
 
     private readonly connectionOptions: ConnectionOptions; 
 
-    constructor(private readonly configService: EnvConfigService,
-        private readonly metricsService: MetricsService
-    ) {
+    constructor(private readonly configService: EnvConfigService) {
 
         this.connectionOptions = {
             servers: [this.configService.get('NATS_SERVER')],
@@ -37,13 +35,22 @@ export class NatsService {
             Logger.debug("Connected to NATS server");
         }
         catch(error) {
+
             Logger.error("Connection to NATS server failed", error);
+            throw error;
         }
     }
 
     public async onModuleDestroy() {
+        try {
 
-        await this.connection.close();
+            await this.connection.drain();
+            await this.connection.close();
+        }
+        catch(error) {
+            Logger.error("Couldn't properly close NATS connection", error);
+            throw error;
+        }
     }
 
     public async createStreamIfNotExist(options: Partial<StreamConfig>) {
@@ -71,7 +78,6 @@ export class NatsService {
             const sc = StringCodec();
             const payload = sc.encode(JSON.stringify(data));
             const pubAck = this.jsc.publish(subject, payload);
-            this.metricsService.incrementProcessedEventsCounter();
 
             return pubAck;
         }
