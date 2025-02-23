@@ -1,24 +1,57 @@
-import { Controller, Get, NotImplementedException } from '@nestjs/common';
+import { Controller, Get, InternalServerErrorException, Logger,
+   Query, UsePipes, ValidationPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { ReportsService } from './modules/db/reports/reports.service';
+import { GetEventsDto } from './dto/eventReport.dto';
+import { GetRevenueDto } from './dto/revenueReport.dto';
+import { GetDemographicDto } from './dto/demographicReport.dto';
 
 @Controller("reports")
 export class AppController {
-  constructor() {}
+  constructor(private readonly reportsService: ReportsService) {}
 
   @Get("events")
-  async getEventsReport() {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getEventsReport(@Query() query: GetEventsDto) {
 
-    throw new NotImplementedException;
+    try {
+      
+      return this.reportsService.getEvents({...query});
+    }
+    catch(error) {
+      Logger.error("Couldn't get events report", error);
+      throw new InternalServerErrorException();
+    }
   }
 
   @Get("revenue")
-  async getRevenueReport() {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getRevenueReport(@Query() query: GetRevenueDto) {
 
-    throw new NotImplementedException;
+    try {
+      
+      return this.reportsService.getRevenue({...query});
+    }
+    catch(error) {
+      Logger.error("Couldn't get revenue report", error);
+      throw new InternalServerErrorException();
+    }
   }
 
-  @Get("revenue")
-  async  getDemographicsReport() {
+  @Get("demographic")
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getDemographicsReport(@Query() query: GetDemographicDto) {
 
-    throw new NotImplementedException;
+    try {
+
+      return this.reportsService.getDemographics({...query});
+    }
+    catch(error) {
+      Logger.error("Couldn't get demographic report", error);
+      throw new InternalServerErrorException();
+    }
   }
+
+  @Get("healthcheck")
+  @HttpCode(HttpStatus.OK)
+  getStatus() {}
 }
