@@ -1,0 +1,217 @@
+services:
+  events:
+    image: andriiuni/events:latest
+    environment:
+      EVENT_ENDPOINT: "http://gateway:3010"
+    ports:
+      - "3030:3030"
+    networks:
+      - gateway-network
+    depends_on:
+      - db
+      - nats
+
+  gateway:
+    build:
+      context: ./services/gateway
+      args:
+        NODE_ENV: ${NODE_ENV}
+    environment:
+      PORT: 3010
+      NATS_SERVER: nats://nats:4222
+      NATS_STREAM_NAME_EVENT: base_event
+      NATS_SUBJECT_NAME_EVENT: base_event.event
+    env_file:
+      - ./services/gateway/.env.${NODE_ENV}
+    deploy:
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3010:3010"
+    depends_on:
+      - nats
+      - fb-collector
+      - tt-collector
+      - events
+    networks:
+      - gateway-network
+      - nats-network
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://gateway:3010/healthcheck"]
+      interval: 10s
+      retries: 3
+      start_period: 30s
+      timeout: 5s
+
+  fb-collector:
+    build:
+      context: ./services/collector
+      args:
+        NODE_ENV: ${NODE_ENV}
+    environment:
+      PORT: 3005
+      DATABASE_URL: postgresql://postgres:admin@db:5432/eventdb?schema=public
+      NATS_SERVER: nats://nats:4222
+      NATS_STREAM_NAME_EVENT: base_event
+      NATS_SUBJECT_NAME_EVENT: base_event.event
+      NATS_CONSUMER_NAME_EVENT: event_consumer_fb
+      SERVICE_NAME: fb-collector
+      SOURCE_EVENT: facebook
+    env_file:
+      - ./services/collector/.env.${NODE_ENV}
+    ports:
+      - "3005:3005"
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - db
+      - nats
+    networks:
+      - db-network
+      - nats-network
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://fb-collector:3005/healthcheck"]
+      interval: 10s
+      retries: 3
+      start_period: 30s
+      timeout: 5s
+
+  tt-collector:
+    build:
+      context: ./services/collector
+      args:
+        NODE_ENV: ${NODE_ENV}
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgresql://postgres:admin@db:5432/eventdb?schema=public
+      NATS_SERVER: nats://nats:4222
+      NATS_STREAM_NAME_EVENT: base_event
+      NATS_SUBJECT_NAME_EVENT: base_event.event
+      NATS_CONSUMER_NAME_EVENT: event_consumer_tt
+      SERVICE_NAME: tt-collector
+      SOURCE_EVENT: tiktok
+    env_file:
+      - ./services/collector/.env.${NODE_ENV}
+    deploy:
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3004:3004"
+    depends_on:
+      - db
+      - nats
+    networks:
+      - db-network
+      - nats-network
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://tt-collector:3004/healthcheck"]
+      interval: 10s
+      retries: 3
+      start_period: 30s
+      timeout: 5s
+
+  report:
+      build:
+        context: ./services/report
+        args:
+          NODE_ENV: ${NODE_ENV}
+      environment:
+        PORT: 3020
+        DATABASE_URL: postgresql://postgres:admin@db:5432/eventdb?schema=public
+      env_file:
+        - ./services/report/.env.${NODE_ENV}
+      deploy:
+        restart_policy:
+          condition: on-failure
+      ports:
+        - "3020:3020"
+      depends_on:
+        - db
+      networks:
+        - db-network
+        - monitoring-network
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://report:3005/healthcheck"]
+        interval: 10s
+        retries: 3
+        start_period: 30s
+        timeout: 5s
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-network
+
+  nats:
+    image: nats:2.10.12-alpine
+    command: "-js"
+    volumes:
+      - nats-data:/data
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    healthcheck:
+      test: ["CMD", "nats-server", "--version"]
+      interval: 10s
+      retries: 5
+    networks:
+      - nats-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: eventdb
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - db-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+      timeout: 3s
+
+volumes:
+  grafana-data:
+  prometheus-data:
+  nats-data:
+  db-data:
+
+networks:
+  db-network:
+    driver: bridge
+  nats-network:
+    driver: bridge
+  gateway-network:
+    driver: bridge
+  monitoring-network:
+    driver: bridge
